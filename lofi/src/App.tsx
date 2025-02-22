@@ -85,16 +85,6 @@ function App() {
               </div>
             ))}
           </div>
-
-          {/* Minimal Controls */}
-          <div className="flex justify-center gap-6">
-            <button className="p-2 text-white/60 hover:text-white/80 transition-all">
-              <Bookmark className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-            <button className="p-2 text-white/60 hover:text-white/80 transition-all">
-              <Share2 className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-          </div>
         </div>
       </div>
     </div>
