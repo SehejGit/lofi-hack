@@ -62,17 +62,24 @@ function App() {
               <button
                 key={mood}
                 onClick={() => handlePromptClick(mood)}
-                className="relative overflow-hidden px-6 py-3 rounded-xl cursor-pointer
-                         bg-black/80 backdrop-blur-sm text-white/80
-                         hover:bg-black/90 hover:text-white transition-all duration-300"
+                className="group relative overflow-hidden px-6 py-3 rounded-xl cursor-pointer
+                         bg-white/5 backdrop-blur-sm border border-white/10
+                         hover:bg-white/10 hover:border-white/20 transition-all duration-300"
               >
-                {mood}
+                {/* Shiny effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
+                              translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                
+                {/* Button text */}
+                <span className="relative z-10 text-white/80 group-hover:text-white transition-colors">
+                  {mood}
+                </span>
               </button>
             ))}
           </div>
 
-          {/* Hidden Controls until needed */}
-          <div className="hidden">
+          {/* Minimal Controls */}
+          <div className="flex justify-center gap-6">
             <button className="p-2 text-white/60 hover:text-white/80 transition-all">
               <Bookmark className="w-5 h-5" strokeWidth={1.5} />
             </button>
