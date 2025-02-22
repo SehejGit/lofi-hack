@@ -5,11 +5,14 @@ import os
 class AudioQueryManager:
     def __init__(self, db_path='./chroma_db', collection_name='audio'):
         """
-        Initialize ChromaDB client and load the audio prompts collection.
+        Initialize ChromaDB client and load or create the audio prompts collection.
         
         :param db_path: Path to ChromaDB storage
         :param collection_name: Name of the collection to query
         """
+        # Ensure the database directory exists
+        os.makedirs(db_path, exist_ok=True)
+        
         # Initialize ChromaDB client
         self.chroma_client = chromadb.PersistentClient(path=db_path)
         
@@ -42,9 +45,7 @@ class AudioQueryManager:
         """
         Search audio files based on metadata filters.
         
-        :param filter_dict: Dictionary of metadata filters
-        :param n_results: Number of results to return
-        :return: List of matching audio files and their metadata
+        :param track_data: Dictionary containing track metadata
         """
         # Prepare ChromaDB compatible filter
         chroma_filter = {}
