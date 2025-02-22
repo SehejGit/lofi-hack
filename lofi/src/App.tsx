@@ -1,7 +1,7 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
 import { Bookmark, Share2 } from 'lucide-react'
-import { ShineBorder } from './components/ShinyBorder'
+import { ShineBorder } from './components/ShineBorder'
 import './App.css'
 
 function App() {
