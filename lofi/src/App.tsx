@@ -1,6 +1,6 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
-import { Bookmark, Share2, Play, Pause, Volume2, VolumeX } from 'lucide-react'
+
 import './App.css'
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const moodSuggestions = [
-    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
+    'sunset vibes', 'city dreams', 'peaceful evening'
   ]
 
   useEffect(() => {
@@ -72,40 +72,47 @@ const generateMusic = async (prompt: string) => {
     }
 
     const trackData = await response.json();
-    
-    // Extensive logging
-    console.log('Full Track Data:', trackData);
-    console.log('Local Audio Path:', trackData.local_audio_path);
-    
-    // Try to create a blob from the file
-    const audioBlob = await fetch(`file://${trackData.local_audio_path}`).then(r => r.blob());
-    const audioUrl = URL.createObjectURL(audioBlob);
+    console.log('Track Data:', trackData);
+
+    const audioUrl = `http://localhost:8000${trackData.audio_url}`;
+    console.log('Attempting to play audio from:', audioUrl);
 
     if (audioRef.current) {
       try {
+        // First try to fetch the audio to ensure it's accessible
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) {
+          throw new Error(`Failed to fetch audio: ${audioResponse.status}`);
+        }
+
+        // Set audio element properties
         audioRef.current.src = audioUrl;
+        audioRef.current.type = 'audio/mpeg';
         
-        // Add event listeners for debugging
-        audioRef.current.addEventListener('error', (e) => {
-          console.error('Audio Error Event:', e);
+        // Wait for the audio to be loaded
+        await new Promise((resolve, reject) => {
+          if (!audioRef.current) return reject('No audio element');
+          
+          audioRef.current.oncanplaythrough = resolve;
+          audioRef.current.onerror = () => reject('Audio loading failed');
+          
+          // Set a timeout in case loading takes too long
+          setTimeout(() => reject('Audio loading timeout'), 5000);
         });
 
-        audioRef.current.addEventListener('canplay', () => {
-          console.log('Audio can play');
-        });
-
-        await audioRef.current.play().then(() => {
-          console.log('Audio Started Playing');
-          setIsPlaying(true);
-        }).catch((playError) => {
-          console.error('Play Method Error:', playError);
-        });
-      } catch (setupError) {
-        console.error('Audio Setup Error:', setupError);
+        await audioRef.current.play();
+        setIsPlaying(true);
+        console.log('Audio playing successfully');
+      } catch (error) {
+        console.error('Audio playback error:', error);
+        // Log the actual audio element error if it exists
+        if (audioRef.current?.error) {
+          console.error('Audio element error:', audioRef.current.error);
+        }
       }
     }
   } catch (error) {
-    console.error('Error generating music:', error);
+    console.error('Error in generateMusic:', error);
   } finally {
     setIsGeneratingMusic(false);
   }

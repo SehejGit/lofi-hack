@@ -36,7 +36,7 @@ def download_audio_file(audio_url, output_dir='downloaded_audio'):
         print(f"Error downloading audio from {audio_url}: {e}")
         return None
 
-def fetch_huggingface_dataset(dataset='vikhyatk/lofi', split='train', offset=0, length=5):
+def fetch_huggingface_dataset(dataset='vikhyatk/lofi', split='train', offset=205, length=100):
     """
     Fetch dataset rows from Hugging Face Datasets Server.
     

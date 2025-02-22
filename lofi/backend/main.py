@@ -5,7 +5,9 @@ from pydantic import BaseModel
 from io import BytesIO
 import traceback
 import os
+from fastapi.responses import FileResponse
 import uuid
+from pathlib import Path
 
 # Import image generation
 from .image_generation import generate_image
@@ -63,14 +65,45 @@ async def generate_music_endpoint(request: PromptRequest):
         # Get the most similar track's details
         most_similar_track = search_results[0]
         
-        # Return track metadata
+        # Create a URL endpoint for the audio file
+        audio_endpoint = f"/api/audio/{os.path.basename(most_similar_track['local_audio_path'])}"
+        
+        # Return track metadata with the endpoint URL
         return JSONResponse(content={
             "prompt": most_similar_track['prompt'],
-            "local_audio_path": most_similar_track['local_audio_path'],
-            "audio_url": most_similar_track.get('audio_url', ''),
+            "audio_url": audio_endpoint,
             "distance": most_similar_track.get('distance')
         })
+
     except Exception as e:
         print(f"Error in generate_music endpoint: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/audio/{filename}")
+async def get_audio(filename: str):
+    try:
+        # Use the correct audio directory path
+        audio_dir = Path("downloaded_audio")  # Changed from "audio" to "downloaded_audio"
+        audio_path = audio_dir / filename
+        
+        print(f"Attempting to serve audio from: {audio_path}")
+        print(f"File exists: {audio_path.exists()}")
+        
+        if not audio_path.exists():
+            raise HTTPException(status_code=404, detail=f"Audio file not found at {audio_path}")
+            
+        return FileResponse(
+            str(audio_path),
+            media_type="audio/mpeg",
+            headers={
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+    except Exception as e:
+        print(f"Error serving audio: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
