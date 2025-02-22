@@ -1,6 +1,7 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
 import { Bookmark, Share2 } from 'lucide-react'
+import { ShineBorder } from './components/ShinyBorder'
 import './App.css'
 
 function App() {
@@ -9,11 +10,10 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   
   const moodSuggestions = [
-    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour'
+    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
   ]
 
   useEffect(() => {
-    // Autoplay video when component mounts
     if (videoRef.current) {
       videoRef.current.play()
     }
@@ -61,28 +61,30 @@ function App() {
           />
 
           {/* Mood Suggestions */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-12">
             {moodSuggestions.map(mood => (
-              <button
+              <ShineBorder
                 key={mood}
+                borderRadius={8}
+                borderWidth={1}
+                duration={8}
+                color={["rgba(255,255,255,0.1)", "rgba(255,255,255,0.2)"]}
+                className="min-w-0 w-full cursor-pointer"
                 onClick={() => handlePromptClick(mood)}
-                className="px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm
-                         text-white/80 hover:text-white transition-all
-                         hover:bg-black/40"
               >
-                {mood}
-              </button>
+                <div className="flex items-center justify-center">
+                  <span className="text-white/80">{mood}</span>
+                </div>
+              </ShineBorder>
             ))}
           </div>
 
           {/* Minimal Controls */}
           <div className="flex justify-center gap-6">
-            <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm
-                           text-white/60 hover:text-white/80 transition-all">
+            <button className="p-2 text-white/60 hover:text-white/80 transition-all">
               <Bookmark className="w-5 h-5" strokeWidth={1.5} />
             </button>
-            <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm
-                           text-white/60 hover:text-white/80 transition-all">
+            <button className="p-2 text-white/60 hover:text-white/80 transition-all">
               <Share2 className="w-5 h-5" strokeWidth={1.5} />
             </button>
           </div>
