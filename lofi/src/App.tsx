@@ -1,195 +1,149 @@
 import { useBasic, useQuery } from '@basictech/react'
-import { useState } from 'react'
-import { Music, Play, Pause, RefreshCw, Save } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Headphones, PlayCircle, PauseCircle, BookmarkPlus, Share2 } from 'lucide-react'
 import './App.css'
-
-// Types for our data structures
-interface Theme {
-  id: string
-  name: string
-  description: string
-  backgroundUrl: string
-  musicParams: {
-    tempo: number
-    mood: string
-    instruments: string[]
-  }
-}
-
-interface SavedTheme {
-  id: string
-  name: string
-  prompt: string
-  createdAt: number
-}
 
 function App() {
   const { db } = useBasic()
   const [currentPrompt, setCurrentPrompt] = useState('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [currentTheme, setCurrentTheme] = useState<Theme | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   
-  // Fetch saved themes from Basic Tech database
-  const savedThemes = useQuery(() => db.collection('saved_themes').getAll())
-
-  // Suggested prompts for inspiration
-  const suggestedPrompts = [
-    'Rainy night in Tokyo',
-    'Cozy coffee shop ambiance',
-    'Beach sunset meditation',
-    'Late night coding session',
-    'Forest meditation retreat'
+  const moodSuggestions = [
+    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
   ]
 
-  const generateTheme = async (prompt: string) => {
-    setIsGenerating(true)
-    try {
-      // Here you would integrate with your music generation API
-      // For now, we'll simulate the response
-      const theme: Theme = {
-        id: Date.now().toString(),
-        name: prompt,
-        description: `Generated theme based on: ${prompt}`,
-        backgroundUrl: '/api/placeholder/1920/1080', // Replace with actual generated image
-        musicParams: {
-          tempo: 70 + Math.random() * 20,
-          mood: prompt.toLowerCase().includes('night') ? 'calm' : 'upbeat',
-          instruments: ['piano', 'synth', 'drums']
-        }
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play()
       }
-      setCurrentTheme(theme)
-      setIsPlaying(true)
-    } catch (error) {
-      console.error('Error generating theme:', error)
-    } finally {
-      setIsGenerating(false)
+    }
+    setIsPlaying(!isPlaying)
+  }
+
+  const generateMusic = async () => {
+    setIsGenerating(true)
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setIsGenerating(false)
+    setIsPlaying(true)
+    if (videoRef.current) {
+      videoRef.current.play()
     }
   }
 
   const saveTheme = async () => {
-    if (!currentTheme) return
     await db.collection('saved_themes').add({
-      name: currentTheme.name,
       prompt: currentPrompt,
       createdAt: Date.now()
     })
   }
 
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying)
-  }
-
   return (
-    <div className="min-h-screen relative">
-      {/* Background with overlay */}
-      <div 
-        className="fixed inset-0 bg-cover bg-center transition-all duration-1000"
-        style={{ 
-          backgroundImage: currentTheme 
-            ? `url(${currentTheme.backgroundUrl})` 
-            : 'linear-gradient(to bottom right, #1e293b, #0f172a)'
-        }}
+    <div className="min-h-screen relative overflow-hidden font-sans">
+      {/* Video Background */}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        loop
+        muted
+        playsInline
+        src="/background.mp4"
       >
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      </div>
+        Your browser does not support the video tag.
+      </video>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-pink-900/30 via-purple-900/40 to-black/50 backdrop-blur-[1px]" />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <Music className="w-8 h-8 text-purple-400" />
-          <h1 className="text-4xl font-bold text-white">Lofi Vibe Generator</h1>
-        </div>
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
+        <div className="w-full max-w-2xl mx-auto text-center">
+          {/* Title */}
+          <div className="flex items-center justify-center gap-3 mb-12">
+            <Headphones className="w-12 h-12 text-pink-300" strokeWidth={1.5} />
+            <h1 className="text-6xl font-light text-white tracking-wide">lofi mood</h1>
+          </div>
 
-        {/* Prompt input */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <input
-            type="text"
-            value={currentPrompt}
-            onChange={(e) => setCurrentPrompt(e.target.value)}
-            placeholder="Describe your desired vibe..."
-            className="w-full px-4 py-3 bg-white/10 rounded-lg border border-purple-400/30 
-                     text-white placeholder-purple-200/50 focus:outline-none focus:border-purple-400"
-          />
-          
-          {/* Suggestion chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {suggestedPrompts.map(prompt => (
+          {/* Main Input */}
+          <div className="mb-8">
+            <input
+              type="text"
+              value={currentPrompt}
+              onChange={(e) => setCurrentPrompt(e.target.value)}
+              placeholder="how are you feeling..."
+              className="w-full px-8 py-4 text-xl bg-white/10 rounded-full 
+                       border border-pink-300/20 text-white placeholder-pink-200/50 
+                       focus:outline-none focus:border-pink-300/40 transition-all
+                       backdrop-blur-sm"
+            />
+          </div>
+
+          {/* Mood Suggestions */}
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            {moodSuggestions.map(mood => (
               <button
-                key={prompt}
-                onClick={() => setCurrentPrompt(prompt)}
-                className="px-3 py-1 rounded-full bg-purple-400/20 text-purple-200 
-                         hover:bg-purple-400/30 transition-colors"
+                key={mood}
+                onClick={() => setCurrentPrompt(mood)}
+                className="px-5 py-2 rounded-full bg-white/5 text-pink-200 
+                         border border-pink-300/20 hover:bg-white/10 
+                         hover:border-pink-300/40 transition-all duration-300"
               >
-                {prompt}
+                {mood}
               </button>
             ))}
           </div>
+
+          {/* Controls */}
+          <div className="flex justify-center items-center gap-6">
+            {/* Main Play Button */}
+            <button
+              onClick={isPlaying ? togglePlayPause : generateMusic}
+              disabled={isGenerating}
+              className="group flex items-center justify-center w-16 h-16 rounded-full 
+                       bg-gradient-to-r from-pink-400/80 to-purple-400/80 
+                       hover:from-pink-400 hover:to-purple-400
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-all duration-300"
+            >
+              {isGenerating ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent 
+                             rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <PauseCircle className="w-8 h-8 text-white" strokeWidth={1.5} />
+              ) : (
+                <PlayCircle className="w-8 h-8 text-white" strokeWidth={1.5} />
+              )}
+            </button>
+
+            {/* Save Button */}
+            <button
+              onClick={saveTheme}
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 
+                       transition-all duration-300"
+            >
+              <BookmarkPlus className="w-6 h-6 text-pink-200" strokeWidth={1.5} />
+            </button>
+
+            {/* Share Button */}
+            <button
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 
+                       transition-all duration-300"
+            >
+              <Share2 className="w-6 h-6 text-pink-200" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
-        {/* Controls */}
-        <div className="max-w-2xl mx-auto flex gap-4 justify-center mb-8">
-          <button
-            onClick={() => generateTheme(currentPrompt)}
-            disabled={isGenerating || !currentPrompt}
-            className="px-6 py-3 rounded-lg bg-purple-500 text-white flex items-center gap-2
-                     hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Generate'
-            )}
-          </button>
-
-          {currentTheme && (
-            <>
-              <button
-                onClick={togglePlayPause}
-                className="px-6 py-3 rounded-lg bg-white/10 text-white flex items-center gap-2
-                         hover:bg-white/20"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                {isPlaying ? 'Pause' : 'Play'}
-              </button>
-
-              <button
-                onClick={saveTheme}
-                className="px-6 py-3 rounded-lg bg-white/10 text-white flex items-center gap-2
-                         hover:bg-white/20"
-              >
-                <Save className="w-5 h-5" />
-                Save
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Saved themes */}
-        {savedThemes && savedThemes.length > 0 && (
-          <div className="max-w-4xl mx-auto mt-16">
-            <h2 className="text-2xl font-semibold text-white mb-4">Saved Themes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {savedThemes.map((theme: SavedTheme) => (
-                <div
-                  key={theme.id}
-                  onClick={() => {
-                    setCurrentPrompt(theme.prompt)
-                    generateTheme(theme.prompt)
-                  }}
-                  className="p-4 rounded-lg bg-white/10 backdrop-blur-md cursor-pointer
-                           hover:bg-white/20 transition-colors"
-                >
-                  <h3 className="text-lg font-medium text-white">{theme.name}</h3>
-                  <p className="text-sm text-purple-200/70">
-                    {new Date(theme.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
+        {/* Current Status - only show when playing */}
+        {isPlaying && (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 
+                         px-6 py-3 rounded-full bg-black/30 backdrop-blur-md
+                         border border-pink-300/20 text-pink-200 text-sm">
+            Now playing: {currentPrompt || 'Sunset lofi beats'}
           </div>
         )}
       </div>
