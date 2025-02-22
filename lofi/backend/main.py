@@ -60,63 +60,17 @@ async def generate_music_endpoint(request: PromptRequest):
         if not search_results:
             raise HTTPException(status_code=404, detail="No similar audio found")
         
-        # Get the most similar track's local path
-        most_similar_track = search_results[0]['local_audio_path']
+        # Get the most similar track's details
+        most_similar_track = search_results[0]
         
-        # Read the audio file
-        with open(most_similar_track, 'rb') as audio_file:
-            audio_bytes = audio_file.read()
-        
-        # Optional: Generate a unique filename for tracking/caching
-        filename = f"lofi_track_{uuid.uuid4()}.mp3"
-        
-        # Play the audio track
-        audio_query_manager.play_audio(most_similar_track)
-        
-        return Response(content=audio_bytes, media_type="audio/mpeg", headers={
-            "X-Track-Prompt": search_results[0]['prompt'],
-            "X-Track-Path": most_similar_track
+        # Return track metadata
+        return JSONResponse(content={
+            "prompt": most_similar_track['prompt'],
+            "local_audio_path": most_similar_track['local_audio_path'],
+            "audio_url": most_similar_track.get('audio_url', ''),
+            "distance": most_similar_track.get('distance')
         })
     except Exception as e:
         print(f"Error in generate_music endpoint: {str(e)}")
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Add endpoint for playback control
-@app.post("/api/audio/control")
-async def audio_control_endpoint(request: Request):
-    try:
-        control_data = await request.json()
-        action = control_data.get('action')
-        
-        if action == 'stop':
-            audio_query_manager.stop_audio()
-        elif action == 'pause':
-            audio_query_manager.pause_audio()
-        elif action == 'resume':
-            audio_query_manager.resume_audio()
-        else:
-            raise HTTPException(status_code=400, detail="Invalid audio control action")
-        
-        return JSONResponse(content={"status": "success"})
-    except Exception as e:
-        print(f"Error in audio control: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Add endpoint to get current track information
-@app.get("/api/audio/current")
-async def get_current_track():
-    try:
-        if audio_query_manager.current_track:
-            return JSONResponse(content={
-                "is_playing": audio_query_manager.is_playing,
-                "current_track": audio_query_manager.current_track
-            })
-        else:
-            return JSONResponse(content={
-                "is_playing": False,
-                "current_track": None
-            })
-    except Exception as e:
-        print(f"Error getting current track: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
