@@ -1,6 +1,6 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
-import { Bookmark, Share2 } from 'lucide-react'
+import { Bookmark, Share2, Play, Pause, Volume2, VolumeX } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -8,7 +8,12 @@ function App() {
   const [currentPrompt, setCurrentPrompt] = useState('')
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
   const [isImageLoading, setIsImageLoading] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
+  const [isGeneratingMusic, setIsGeneratingMusic] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const moodSuggestions = [
@@ -42,11 +47,69 @@ function App() {
       setBackgroundImage(imageUrl);
     } catch (error) {
       console.error('Error generating image:', error);
-      setBackgroundImage(null); // Revert to video on error
+      setBackgroundImage(null);
     } finally {
       setIsImageLoading(false);
     }
   };
+
+  // Function to generate music
+  // Function to generate music
+// Function to generate music
+const generateMusic = async (prompt: string) => {
+  try {
+    setIsGeneratingMusic(true);
+    const response = await fetch('http://localhost:8000/api/generate-music', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate music');
+    }
+
+    const trackData = await response.json();
+    
+    // Extensive logging
+    console.log('Full Track Data:', trackData);
+    console.log('Local Audio Path:', trackData.local_audio_path);
+    
+    // Try to create a blob from the file
+    const audioBlob = await fetch(`file://${trackData.local_audio_path}`).then(r => r.blob());
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    if (audioRef.current) {
+      try {
+        audioRef.current.src = audioUrl;
+        
+        // Add event listeners for debugging
+        audioRef.current.addEventListener('error', (e) => {
+          console.error('Audio Error Event:', e);
+        });
+
+        audioRef.current.addEventListener('canplay', () => {
+          console.log('Audio can play');
+        });
+
+        await audioRef.current.play().then(() => {
+          console.log('Audio Started Playing');
+          setIsPlaying(true);
+        }).catch((playError) => {
+          console.error('Play Method Error:', playError);
+        });
+      } catch (setupError) {
+        console.error('Audio Setup Error:', setupError);
+      }
+    }
+  } catch (error) {
+    console.error('Error generating music:', error);
+  } finally {
+    setIsGeneratingMusic(false);
+  }
+};
 
   // Debounced prompt change handler
   useEffect(() => {
@@ -57,6 +120,7 @@ function App() {
 
       timeoutRef.current = setTimeout(() => {
         generateImage(currentPrompt);
+        generateMusic(currentPrompt);
       }, 2000);
     }
 
@@ -70,6 +134,24 @@ function App() {
   const handlePromptClick = (mood: string) => {
     setCurrentPrompt(mood)
   }
+
+  // const togglePlay = () => {
+  //   if (audioRef.current) {
+  //     if (isPlaying) {
+  //       audioRef.current.pause();
+  //     } else {
+  //       audioRef.current.play();
+  //     }
+  //     setIsPlaying(!isPlaying);
+  //   }
+  // };
+
+  // const toggleMute = () => {
+  //   if (audioRef.current) {
+  //     audioRef.current.muted = !audioRef.current.muted;
+  //     setIsMuted(!isMuted);
+  //   }
+  // };
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black">
@@ -105,6 +187,9 @@ function App() {
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
+      {/* Audio Element */}
+      <audio ref={audioRef} loop />
+
       {/* Content */}
       <div className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-2xl mx-auto text-center">
@@ -123,6 +208,35 @@ function App() {
                      text-white/60 placeholder-white/60 focus:outline-none focus:border-white/40
                      transition-all mb-16"
           />
+
+          {/* Music Controls */}
+          {audioUrl && (
+            <div className="flex items-center justify-center gap-4 mb-8">
+              {/* <button
+                onClick={togglePlay}
+                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 text-white" />
+                ) : (
+                  <Play className="w-6 h-6 text-white" />
+                )}
+              </button>
+              <button
+                onClick={toggleMute}
+                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-6 h-6 text-white" />
+                ) : (
+                  <Volume2 className="w-6 h-6 text-white" />
+                )}
+              </button> */}
+              {isGeneratingMusic && (
+                <span className="text-white/60">Generating music...</span>
+              )}
+            </div>
+          )}
 
           {/* Mood Suggestions */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">

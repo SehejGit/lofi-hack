@@ -55,7 +55,7 @@ async def generate_music_endpoint(request: PromptRequest):
         print(f"Received music prompt: {request.prompt}")
         
         # Perform semantic search to find most similar existing track
-        search_results = audio_query_manager.semantic_search(request.prompt, n_results=1, play_most_similar=False)
+        search_results = audio_query_manager.semantic_search(request.prompt, n_results=1)
         
         if not search_results:
             raise HTTPException(status_code=404, detail="No similar audio found")
