@@ -1,46 +1,38 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
-import { PlayCircle, PauseCircle, Bookmark, Share2 } from 'lucide-react'
+import { Bookmark, Share2 } from 'lucide-react'
 import './App.css'
 
 function App() {
   const { db } = useBasic()
   const [currentPrompt, setCurrentPrompt] = useState('')
-  const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   
   const moodSuggestions = [
     'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
   ]
 
-  const togglePlayPause = () => {
+  useEffect(() => {
+    // Autoplay video when component mounts
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
+      videoRef.current.play()
     }
-    setIsPlaying(!isPlaying)
-  }
+  }, [])
 
   const handlePromptClick = (mood: string) => {
     setCurrentPrompt(mood)
-    if (!isPlaying && videoRef.current) {
-      videoRef.current.play()
-      setIsPlaying(true)
-    }
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black">
+    <div className="fixed inset-0 overflow-hidden bg-black">
       {/* Video Background */}
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover opacity-90"
+        className="absolute inset-0 w-full h-full object-cover"
         loop
         muted
         playsInline
+        autoPlay
         src="/background.mp4"
       >
         Your browser does not support the video tag.
@@ -50,10 +42,10 @@ function App() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col justify-end pb-24 px-6">
-        <div className="w-full max-w-4xl mx-auto">
+      <div className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
+        <div className="w-full max-w-2xl mx-auto text-center">
           {/* Title */}
-          <h1 className="text-8xl font-light text-white/90 mb-12">
+          <h1 className="text-6xl font-light text-white/90 mb-12">
             lofi mood
           </h1>
 
@@ -65,41 +57,33 @@ function App() {
             placeholder="how are you feeling..."
             className="w-full bg-transparent border-b border-white/20 pb-2 text-xl
                      text-white placeholder-white/50 focus:outline-none focus:border-white/40
-                     transition-all mb-8"
+                     transition-all mb-12"
           />
 
           {/* Mood Suggestions */}
-          <div className="flex flex-wrap gap-4 mb-8">
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
             {moodSuggestions.map(mood => (
               <button
                 key={mood}
                 onClick={() => handlePromptClick(mood)}
-                className="text-white/70 hover:text-white transition-colors"
+                className="px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm
+                         text-white/80 hover:text-white transition-all
+                         hover:bg-black/40"
               >
                 {mood}
               </button>
             ))}
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-6">
-            <button
-              onClick={togglePlayPause}
-              className="text-white/90 hover:text-white transition-colors"
-            >
-              {isPlaying ? (
-                <PauseCircle className="w-12 h-12" strokeWidth={1} />
-              ) : (
-                <PlayCircle className="w-12 h-12" strokeWidth={1} />
-              )}
+          {/* Minimal Controls */}
+          <div className="flex justify-center gap-6">
+            <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm
+                           text-white/60 hover:text-white/80 transition-all">
+              <Bookmark className="w-5 h-5" strokeWidth={1.5} />
             </button>
-            
-            <button className="text-white/60 hover:text-white/80 transition-colors">
-              <Bookmark className="w-6 h-6" strokeWidth={1} />
-            </button>
-            
-            <button className="text-white/60 hover:text-white/80 transition-colors">
-              <Share2 className="w-6 h-6" strokeWidth={1} />
+            <button className="p-2 rounded-full bg-black/30 backdrop-blur-sm
+                           text-white/60 hover:text-white/80 transition-all">
+              <Share2 className="w-5 h-5" strokeWidth={1.5} />
             </button>
           </div>
         </div>
