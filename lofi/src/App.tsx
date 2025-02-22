@@ -1,7 +1,6 @@
 import { useBasic, useQuery } from '@basictech/react'
 import { useState, useEffect, useRef } from 'react'
 import { Bookmark, Share2 } from 'lucide-react'
-import { ShineBorder } from './components/ShineBorder'
 import './App.css'
 
 function App() {
@@ -45,7 +44,7 @@ function App() {
       <div className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-2xl mx-auto text-center">
           {/* Title */}
-          <h1 className="text-6xl font-light text-white/90 mb-12">
+          <h1 className="text-8xl font-light text-white/90 mb-12">
             lofi mood
           </h1>
 
@@ -61,21 +60,23 @@ function App() {
           />
 
           {/* Mood Suggestions */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
             {moodSuggestions.map(mood => (
-              <ShineBorder
+              <button
                 key={mood}
-                borderRadius={8}
-                borderWidth={1}
-                duration={8}
-                color={["rgba(255,255,255,0.1)", "rgba(255,255,255,0.2)"]}
-                className="min-w-0 w-full cursor-pointer"
                 onClick={() => handlePromptClick(mood)}
+                className="group relative overflow-hidden px-6 py-3 rounded-lg cursor-pointer
+                         border border-white/20 hover:border-white/40 transition-colors"
               >
-                <div className="flex items-center justify-center">
-                  <span className="text-white/80">{mood}</span>
-                </div>
-              </ShineBorder>
+                {/* Shiny effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent
+                              translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                
+                {/* Button text */}
+                <span className="relative z-10 text-white/80 group-hover:text-white transition-colors">
+                  {mood}
+                </span>
+              </button>
             ))}
           </div>
 
