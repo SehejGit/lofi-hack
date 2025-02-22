@@ -9,7 +9,7 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   
   const moodSuggestions = [
-    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
+    'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour'
   ]
 
   useEffect(() => {
