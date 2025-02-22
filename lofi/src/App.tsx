@@ -37,14 +37,11 @@ function App() {
         Your browser does not support the video tag.
       </video>
 
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
-
       {/* Content */}
       <div className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-2xl mx-auto text-center">
           {/* Title */}
-          <h1 className="text-8xl font-light text-white/90 mb-12">
+          <h1 className="text-8xl font-light text-white/90 mb-16">
             lofi mood
           </h1>
 
@@ -54,9 +51,9 @@ function App() {
             value={currentPrompt}
             onChange={(e) => setCurrentPrompt(e.target.value)}
             placeholder="how are you feeling..."
-            className="w-full bg-transparent border-b border-white/20 pb-2 text-xl
-                     text-white placeholder-white/50 focus:outline-none focus:border-white/40
-                     transition-all mb-12"
+            className="w-full bg-transparent border-b border-white/20 pb-2 text-2xl
+                     text-white/60 placeholder-white/60 focus:outline-none focus:border-white/40
+                     transition-all mb-16"
           />
 
           {/* Mood Suggestions */}
@@ -65,24 +62,17 @@ function App() {
               <button
                 key={mood}
                 onClick={() => handlePromptClick(mood)}
-                className="group relative overflow-hidden px-6 py-3 rounded-lg cursor-pointer
-                         border border-white/20 bg-white/5 backdrop-blur-sm
-                         hover:border-white/40 hover:bg-white/10 transition-all"
+                className="relative overflow-hidden px-6 py-3 rounded-xl cursor-pointer
+                         bg-black/80 backdrop-blur-sm text-white/80
+                         hover:bg-black/90 hover:text-white transition-all duration-300"
               >
-                {/* Shiny effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent
-                              translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                
-                {/* Button text */}
-                <span className="relative z-10 text-white/80 group-hover:text-white transition-colors">
-                  {mood}
-                </span>
+                {mood}
               </button>
             ))}
           </div>
 
-          {/* Minimal Controls */}
-          <div className="flex justify-center gap-6">
+          {/* Hidden Controls until needed */}
+          <div className="hidden">
             <button className="p-2 text-white/60 hover:text-white/80 transition-all">
               <Bookmark className="w-5 h-5" strokeWidth={1.5} />
             </button>
