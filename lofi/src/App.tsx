@@ -6,7 +6,10 @@ import './App.css'
 function App() {
   const { db } = useBasic()
   const [currentPrompt, setCurrentPrompt] = useState('')
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
+  const [isImageLoading, setIsImageLoading] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const moodSuggestions = [
     'sunset vibes', 'city dreams', 'peaceful evening', 'golden hour', 'urban calm'
@@ -18,24 +21,89 @@ function App() {
     }
   }, [])
 
+  // Function to generate image
+  const generateImage = async (prompt: string) => {
+    try {
+      setIsImageLoading(true);
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const imageBlob = await response.blob();
+      const imageUrl = URL.createObjectURL(imageBlob);
+      setBackgroundImage(imageUrl);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setBackgroundImage(null); // Revert to video on error
+    } finally {
+      setIsImageLoading(false);
+    }
+  };
+
+  // Debounced prompt change handler
+  useEffect(() => {
+    if (currentPrompt.trim()) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        generateImage(currentPrompt);
+      }, 2000);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [currentPrompt]);
+
   const handlePromptClick = (mood: string) => {
     setCurrentPrompt(mood)
   }
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black">
-      {/* Video Background */}
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover"
-        loop
-        muted
-        playsInline
-        autoPlay
-        src="/background.mp4"
-      >
-        Your browser does not support the video tag.
-      </video>
+      {/* Background Container */}
+      <div className="absolute inset-0 w-full h-full">
+        {/* Video Background */}
+        {/* <video
+          ref={videoRef}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            backgroundImage ? 'hidden' : 'block'
+          }`}
+          loop
+          muted
+          playsInline
+          autoPlay
+          src="/background.mp4"
+        >
+          Your browser does not support the video tag.
+        </video> */}
+
+        {/* Generated Image Background */}
+        {backgroundImage && (
+          <div
+            className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              opacity: isImageLoading ? 0 : 1,
+            }}
+          />
+        )}
+
+        {/* Overlay to darken background slightly */}
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
 
       {/* Content */}
       <div className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
