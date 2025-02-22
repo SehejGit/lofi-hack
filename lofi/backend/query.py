@@ -1,9 +1,6 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
 import os
-import pygame
-import threading
-import time
 
 class AudioQueryManager:
     def __init__(self, db_path='./chroma_db', collection_name='audio'):
@@ -21,22 +18,13 @@ class AudioQueryManager:
         
         # Get the collection
         self.collection = self.chroma_client.get_collection(name=collection_name)
-        
-        # Initialize pygame mixer for audio playback
-        pygame.mixer.init()
-        
-        # Current playing track
-        self.current_track = None
-        self.playback_thread = None
-        self.is_playing = False
 
-    def semantic_search(self, query, n_results=5, play_most_similar=True):
+    def semantic_search(self, query, n_results=5):
         """
-        Perform semantic search on audio prompts and optionally play the most similar track.
+        Perform semantic search on audio prompts.
         
         :param query: Text query to search
         :param n_results: Number of results to return
-        :param play_most_similar: Whether to automatically play the most similar track
         :return: List of matching audio files and their metadata
         """
         # Generate embedding for the query
@@ -48,13 +36,7 @@ class AudioQueryManager:
             n_results=n_results
         )
         
-        processed_results = self._process_query_results(results)
-        
-        # Play the most similar track if requested
-        if play_most_similar and processed_results:
-            self.play_audio(processed_results[0]['local_audio_path'])
-        
-        return processed_results
+        return self._process_query_results(results)
 
     def metadata_filter_search(self, filter_dict, n_results=5):
         """
@@ -161,125 +143,45 @@ class AudioQueryManager:
         
         return processed_results
 
-    def play_audio(self, audio_path):
-        """
-        Play an audio file, stopping any currently playing track.
-        
-        :param audio_path: Path to the audio file to play
-        """
-        # Stop any currently playing track
-        self.stop_audio()
-        
-        # Check if file exists
-        if not os.path.exists(audio_path):
-            print(f"Error: Audio file not found at {audio_path}")
-            return
-        
-        try:
-            # Load and play the audio file
-            pygame.mixer.music.load(audio_path)
-            pygame.mixer.music.play()
-            
-            # Update current track and playing status
-            self.current_track = audio_path
-            self.is_playing = True
-            
-            # Start a thread to monitor playback
-            self.playback_thread = threading.Thread(target=self._monitor_playback)
-            self.playback_thread.start()
-        except Exception as e:
-            print(f"Error playing audio: {e}")
-
-    def _monitor_playback(self):
-        """
-        Monitor audio playback and update status when track finishes.
-        """
-        while self.is_playing:
-            # Check if music has stopped naturally
-            if not pygame.mixer.music.get_busy():
-                self.is_playing = False
-                self.current_track = None
-                break
-            time.sleep(1)
-
-    def stop_audio(self):
-        """
-        Stop currently playing audio.
-        """
-        if self.is_playing:
-            pygame.mixer.music.stop()
-            self.is_playing = False
-            self.current_track = None
-
-    def pause_audio(self):
-        """
-        Pause currently playing audio.
-        """
-        if self.is_playing:
-            pygame.mixer.music.pause()
-
-    def resume_audio(self):
-        """
-        Resume paused audio.
-        """
-        if self.current_track:
-            pygame.mixer.music.unpause()
-
 def main():
     # Initialize AudioQueryManager
     query_manager = AudioQueryManager()
     
-    # Interactive audio search and playback
-    while True:
-        # Get user input
-        user_query = input("Enter a music description (or 'quit' to exit): ")
-        
-        # Exit condition
-        if user_query.lower() == 'quit':
-            break
-        
-        # Perform semantic search and play most similar track
-        results = query_manager.semantic_search(user_query)
-        
-        # Print results
-        print("\nTop matching tracks:")
-        for i, result in enumerate(results, 1):
-            print(f"{i}. Prompt: {result['prompt']}")
-            print(f"   Local Path: {result['local_audio_path']}")
-            print(f"   Distance: {result['distance']}\n")
-        
-        # Provide playback control options
-        while query_manager.is_playing:
-            control = input("Playback controls (stop/pause/resume/next): ").lower()
-            if control == 'stop':
-                query_manager.stop_audio()
-                break
-            elif control == 'pause':
-                query_manager.pause_audio()
-            elif control == 'resume':
-                query_manager.resume_audio()
-            elif control == 'next':
-                query_manager.stop_audio()
-                break
+    # Example 1: Semantic Search
+    print("=== Semantic Search ===")
+    print("Searching for 'relaxing music':")
+    semantic_results = query_manager.semantic_search("relaxing music")
+    for result in semantic_results:
+        print(f"Prompt: {result['prompt']}")
+        print(f"Local Audio Path: {result['local_audio_path']}")
+        print(f"Distance: {result['distance']}")
+        print("---")
+    
+    # Example 2: Metadata Filter Search
+    print("\n=== Metadata Filter Search ===")
+    print("Searching for prompts with 'lo-fi':")
+    filter_results = query_manager.metadata_filter_search(
+        {"prompt": {"$contains": "lo-fi"}}
+    )
+    for result in filter_results:
+        print(f"Prompt: {result['prompt']}")
+        print(f"Local Audio Path: {result['local_audio_path']}")
+        print("---")
 
 if __name__ == '__main__':
     main()
 
 # Dependencies:
-# pip install chromadb sentence-transformers pygame
+# pip install chromadb sentence-transformers
 
 """
-Semantic Audio Search and Playback System
-
-Key Features:
+Query Types Demonstrated:
 1. Semantic Search: Find audio files similar to a text query
 2. Metadata Filtering: Search based on specific metadata conditions
-3. Automatic Playback: Play the most similar track
-4. Interactive Playback Controls
 
 Usage Notes:
 1. Install dependencies: 
-   pip install chromadb sentence-transformers pygame
+   pip install chromadb sentence-transformers
 
 Supported Metadata Filters:
 - Exact match: {"key": "value"}
