@@ -51,7 +51,7 @@ function App() {
         loop
         muted
         playsInline
-        src="/background.mp4"
+        src="../public/background.mp4"
       >
         Your browser does not support the video tag.
       </video>
