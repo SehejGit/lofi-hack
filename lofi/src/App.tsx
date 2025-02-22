@@ -25,7 +25,7 @@ function App() {
   const generateImage = async (prompt: string) => {
     try {
       setIsImageLoading(true);
-      const response = await fetch('/api/generate-image', {
+      const response = await fetch('http://localhost:8000/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ function App() {
       {/* Background Container */}
       <div className="absolute inset-0 w-full h-full">
         {/* Video Background */}
-        {/* <video
+        <video
           ref={videoRef}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
             backgroundImage ? 'hidden' : 'block'
@@ -88,7 +88,7 @@ function App() {
           src="/background.mp4"
         >
           Your browser does not support the video tag.
-        </video> */}
+        </video>
 
         {/* Generated Image Background */}
         {backgroundImage && (
