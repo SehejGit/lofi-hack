@@ -66,7 +66,8 @@ function App() {
                 key={mood}
                 onClick={() => handlePromptClick(mood)}
                 className="group relative overflow-hidden px-6 py-3 rounded-lg cursor-pointer
-                         border border-white/20 hover:border-white/40 transition-colors"
+                         border border-white/20 bg-white/5 backdrop-blur-sm
+                         hover:border-white/40 hover:bg-white/10 transition-all"
               >
                 {/* Shiny effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent
