@@ -15,6 +15,9 @@ from .image_generation import generate_image
 # Import query manager for semantic search
 from .query import AudioQueryManager
 
+# Import word suggestions
+from .enhancements import suggest_better_words
+
 # Initialize global audio query manager
 audio_query_manager = AudioQueryManager()
 
@@ -35,8 +38,19 @@ class PromptRequest(BaseModel):
 
 @app.options("/api/generate-image")
 @app.options("/api/generate-music")
+@app.options("/api/suggest-words")
 async def options_handler():
     return Response(status_code=200)
+
+@app.post("/api/suggest-words")
+async def suggest_words_endpoint(request: PromptRequest):
+    try:
+        suggestions = suggest_better_words(request.prompt, top_n=3)
+        return JSONResponse(content={"suggestions": suggestions[:3]})
+    except Exception as e:
+        print(f"Error in suggest_words: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/generate-image")
 async def generate_image_endpoint(request: PromptRequest):
