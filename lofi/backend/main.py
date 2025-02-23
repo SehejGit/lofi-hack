@@ -15,6 +15,9 @@ from .image_generation import generate_image
 # Import query manager for semantic search
 from .query import AudioQueryManager
 
+# Import enhanced pipeline components
+from .enhancements import suggest_better_words
+
 # Initialize global audio query manager
 audio_query_manager = AudioQueryManager()
 
@@ -38,10 +41,25 @@ class PromptRequest(BaseModel):
 async def options_handler():
     return Response(status_code=200)
 
+def enhance_prompt(prompt: str) -> str:
+    """
+    Enhance the user's prompt with suggested words.
+    """
+    suggested_words = suggest_better_words(prompt)
+    if suggested_words:
+        additional_words = ' '.join(suggested_words)
+        return f"{prompt} {additional_words}"
+    return prompt
+
 @app.post("/api/generate-image")
 async def generate_image_endpoint(request: PromptRequest):
     try:
-        image = generate_image(request.prompt)
+        # Enhance the prompt before generating image
+        enhanced_prompt = enhance_prompt(request.prompt)
+        print(f"Original prompt: {request.prompt}")
+        print(f"Enhanced prompt: {enhanced_prompt}")
+        
+        image = generate_image(enhanced_prompt)
         img_byte_arr = BytesIO()
         image.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
@@ -54,10 +72,13 @@ async def generate_image_endpoint(request: PromptRequest):
 @app.post("/api/generate-music")
 async def generate_music_endpoint(request: PromptRequest):
     try:
-        print(f"Received music prompt: {request.prompt}")
+        # Enhance the prompt before searching for music
+        enhanced_prompt = enhance_prompt(request.prompt)
+        print(f"Original music prompt: {request.prompt}")
+        print(f"Enhanced music prompt: {enhanced_prompt}")
         
         # Perform semantic search to find most similar existing track
-        search_results = audio_query_manager.semantic_search(request.prompt, n_results=1)
+        search_results = audio_query_manager.semantic_search(enhanced_prompt, n_results=1)
         
         if not search_results:
             raise HTTPException(status_code=404, detail="No similar audio found")
@@ -70,6 +91,8 @@ async def generate_music_endpoint(request: PromptRequest):
         
         # Return track metadata with the endpoint URL
         return JSONResponse(content={
+            "original_prompt": request.prompt,
+            "enhanced_prompt": enhanced_prompt,
             "prompt": most_similar_track['prompt'],
             "audio_url": audio_endpoint,
             "distance": most_similar_track.get('distance')
