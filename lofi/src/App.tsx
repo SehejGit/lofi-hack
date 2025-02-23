@@ -12,11 +12,14 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(false)
   const [isGeneratingMusic, setIsGeneratingMusic] = useState(false)
+  const [suggestedWords, setSuggestedWords] = useState<string[]>([])
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const suggestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
-  const moodSuggestions = [
+  // Default suggestions until we get real ones
+  const defaultSuggestions = [
     'sunset vibes', 'city dreams', 'peaceful evening'
   ]
 
@@ -25,6 +28,33 @@ function App() {
       videoRef.current.play()
     }
   }, [])
+
+  // Function to get word suggestions
+  const getSuggestions = async (prompt: string) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/suggest-words', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get suggestions');
+      }
+
+      const data = await response.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        setSuggestedWords(data.suggestions);
+      } else {
+        setSuggestedWords(defaultSuggestions);
+      }
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      setSuggestedWords(defaultSuggestions);
+    }
+  };
 
   // Function to generate image
   const generateImage = async (prompt: string) => {
@@ -54,80 +84,89 @@ function App() {
   };
 
   // Function to generate music
-  // Function to generate music
-// Function to generate music
-const generateMusic = async (prompt: string) => {
-  try {
-    setIsGeneratingMusic(true);
-    const response = await fetch('http://localhost:8000/api/generate-music', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt }),
-    });
+  const generateMusic = async (prompt: string) => {
+    try {
+      setIsGeneratingMusic(true);
+      const response = await fetch('http://localhost:8000/api/generate-music', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to generate music');
-    }
+      if (!response.ok) {
+        throw new Error('Failed to generate music');
+      }
 
-    const trackData = await response.json();
-    console.log('Track Data:', trackData);
+      const trackData = await response.json();
+      console.log('Track Data:', trackData);
 
-    const audioUrl = `http://localhost:8000${trackData.audio_url}`;
-    console.log('Attempting to play audio from:', audioUrl);
+      const audioUrl = `http://localhost:8000${trackData.audio_url}`;
+      console.log('Attempting to play audio from:', audioUrl);
 
-    if (audioRef.current) {
-      try {
-        // First try to fetch the audio to ensure it's accessible
-        const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-          throw new Error(`Failed to fetch audio: ${audioResponse.status}`);
-        }
+      if (audioRef.current) {
+        try {
+          // First try to fetch the audio to ensure it's accessible
+          const audioResponse = await fetch(audioUrl);
+          if (!audioResponse.ok) {
+            throw new Error(`Failed to fetch audio: ${audioResponse.status}`);
+          }
 
-        // Set audio element properties
-        audioRef.current.src = audioUrl;
-        audioRef.current.type = 'audio/mpeg';
-        
-        // Wait for the audio to be loaded
-        await new Promise((resolve, reject) => {
-          if (!audioRef.current) return reject('No audio element');
+          // Set audio element properties
+          audioRef.current.src = audioUrl;
+          audioRef.current.type = 'audio/mpeg';
           
-          audioRef.current.oncanplaythrough = resolve;
-          audioRef.current.onerror = () => reject('Audio loading failed');
-          
-          // Set a timeout in case loading takes too long
-          setTimeout(() => reject('Audio loading timeout'), 5000);
-        });
+          // Wait for the audio to be loaded
+          await new Promise((resolve, reject) => {
+            if (!audioRef.current) return reject('No audio element');
+            
+            audioRef.current.oncanplaythrough = resolve;
+            audioRef.current.onerror = () => reject('Audio loading failed');
+            
+            // Set a timeout in case loading takes too long
+            setTimeout(() => reject('Audio loading timeout'), 5000);
+          });
 
-        await audioRef.current.play();
-        setIsPlaying(true);
-        console.log('Audio playing successfully');
-      } catch (error) {
-        console.error('Audio playback error:', error);
-        // Log the actual audio element error if it exists
-        if (audioRef.current?.error) {
-          console.error('Audio element error:', audioRef.current.error);
+          await audioRef.current.play();
+          setIsPlaying(true);
+          console.log('Audio playing successfully');
+        } catch (error) {
+          console.error('Audio playback error:', error);
+          if (audioRef.current?.error) {
+            console.error('Audio element error:', audioRef.current.error);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error in generateMusic:', error);
+    } finally {
+      setIsGeneratingMusic(false);
     }
-  } catch (error) {
-    console.error('Error in generateMusic:', error);
-  } finally {
-    setIsGeneratingMusic(false);
-  }
-};
+  };
 
-  // Debounced prompt change handler
+  // Debounced prompt change handlers
   useEffect(() => {
-    if (currentPrompt.trim()) {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+    const prompt = currentPrompt.trim();
+    
+    // Clear any existing timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (suggestionsTimeoutRef.current) {
+      clearTimeout(suggestionsTimeoutRef.current);
+    }
 
+    if (prompt) {
+      // Get suggestions more quickly
+      suggestionsTimeoutRef.current = setTimeout(() => {
+        getSuggestions(prompt);
+      }, 500);
+
+      // Generate content with more delay
       timeoutRef.current = setTimeout(() => {
-        generateImage(currentPrompt);
-        generateMusic(currentPrompt);
+        generateImage(prompt);
+        generateMusic(prompt);
       }, 2000);
     }
 
@@ -135,30 +174,15 @@ const generateMusic = async (prompt: string) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      if (suggestionsTimeoutRef.current) {
+        clearTimeout(suggestionsTimeoutRef.current);
+      }
     };
   }, [currentPrompt]);
 
-  const handlePromptClick = (mood: string) => {
-    setCurrentPrompt(mood)
+  const handlePromptClick = (suggestion: string) => {
+    setCurrentPrompt(currentPrompt + ' ' + suggestion)
   }
-
-  // const togglePlay = () => {
-  //   if (audioRef.current) {
-  //     if (isPlaying) {
-  //       audioRef.current.pause();
-  //     } else {
-  //       audioRef.current.play();
-  //     }
-  //     setIsPlaying(!isPlaying);
-  //   }
-  // };
-
-  // const toggleMute = () => {
-  //   if (audioRef.current) {
-  //     audioRef.current.muted = !audioRef.current.muted;
-  //     setIsMuted(!isMuted);
-  //   }
-  // };
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black">
@@ -219,41 +243,21 @@ const generateMusic = async (prompt: string) => {
           {/* Music Controls */}
           {audioUrl && (
             <div className="flex items-center justify-center gap-4 mb-8">
-              {/* <button
-                onClick={togglePlay}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                {isPlaying ? (
-                  <Pause className="w-6 h-6 text-white" />
-                ) : (
-                  <Play className="w-6 h-6 text-white" />
-                )}
-              </button>
-              <button
-                onClick={toggleMute}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                {isMuted ? (
-                  <VolumeX className="w-6 h-6 text-white" />
-                ) : (
-                  <Volume2 className="w-6 h-6 text-white" />
-                )}
-              </button> */}
               {isGeneratingMusic && (
                 <span className="text-white/60">Generating music...</span>
               )}
             </div>
           )}
 
-          {/* Mood Suggestions */}
+          {/* Word Suggestions */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
-            {moodSuggestions.map(mood => (
+            {(suggestedWords.length > 0 ? suggestedWords : defaultSuggestions).map(suggestion => (
               <div
-                key={mood}
+                key={suggestion}
                 className="group relative overflow-hidden rounded-xl"
               >
                 <button
-                  onClick={() => handlePromptClick(mood)}
+                  onClick={() => handlePromptClick(suggestion)}
                   style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     backdropFilter: 'blur(8px)'
@@ -268,7 +272,7 @@ const generateMusic = async (prompt: string) => {
                   
                   {/* Button text */}
                   <span className="relative z-10 text-white/80 group-hover:text-white transition-colors">
-                    {mood}
+                    {suggestion}
                   </span>
                 </button>
               </div>
