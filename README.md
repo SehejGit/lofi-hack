@@ -49,5 +49,5 @@ This project is designed to help users set the **perfect mood** based on a simpl
 
 ### **1️⃣ Clone the repository**  
 ```bash
-git clone https://github.com/your-username/lofi-mood.git
-cd lofi-mood
+git clone https://github.com/sehejgit/lofi-hack.git
+cd lofi-hack
